@@ -133,3 +133,41 @@ func (p *LRUPolicy[T, V]) Update(val T) {
 		p.list.insertFront(val)
 	}
 }
+
+// This is based on the least recently accessed based on time..
+// This policy uses the last accessed stats on a cache entry to evict or not
+// This policy will not do well if cache is mostly over the limit as the loop to evict caches is expensive.
+// However, it will do well during reads since we're not doing anything during reads
+type LRUTimePolicy[T comparable, V any] struct {
+}
+
+func NewLRUTimePolicy[T comparable, V any]() *LRUTimePolicy[T, V] {
+	return &LRUTimePolicy[T, V]{}
+
+}
+
+func (p *LRUTimePolicy[T, V]) Insert(val T) {
+}
+
+func (p *LRUTimePolicy[T, V]) Update(val T) {
+}
+
+func (p LRUTimePolicy[T, V]) Evict(data map[T]*cacheEntry[V]) (T, bool) {
+	lru := struct {
+		minTime time.Time
+		key     T
+	}{}
+	isFirst := true
+	var zero T
+	if len(data) == 0 {
+		return zero, false
+	}
+	for k, v := range data {
+		if isFirst || v.stats.lastAccessed.Before(lru.minTime) {
+			lru.minTime = v.stats.lastAccessed
+			lru.key = k
+			isFirst = false
+		}
+	}
+	return lru.key, true
+}
