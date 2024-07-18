@@ -38,8 +38,8 @@ func TestCache(t *testing.T) {
 		for _, tt := range tests {
 			cache.Put(tt.key, tt.value)
 			val, _ := cache.Get(tt.key)
-			if *val != tt.value {
-				t.Errorf("wanted %q, got %q", tt.value, *val)
+			if val != tt.value {
+				t.Errorf("wanted %q, got %q", tt.value, val)
 			}
 		}
 	})
@@ -126,7 +126,7 @@ func TestCacheConcurrent(t *testing.T) {
 	})
 }
 
-func TestEvictionAlgorithms(t *testing.T) {
+func TestEvictionAlgorithm(t *testing.T) {
 	t.Run("Test LRU algorithm", func(t *testing.T) {
 		cache := NewCache[string, string](2)
 		cache.Put("hello", "world")
@@ -136,15 +136,135 @@ func TestEvictionAlgorithms(t *testing.T) {
 			t.Errorf("wanted %d, got %d", len(cache.entries), cache.limit)
 		}
 	})
+}
 
+func TestLRUPolicy(t *testing.T) {
+
+	t.Run("test insert success", func(t *testing.T) {
+		c := NewCache[int, string](10)
+		p := c.policy
+		_, ok := p.Evict(c.entries)
+		if ok {
+			t.Errorf("wanted false got %v", ok)
+		}
+		p.Insert(5)
+		_, ok = p.Evict(c.entries)
+		if !ok {
+			t.Errorf("wanted true got %v", ok)
+		}
+	})
+
+	t.Run("test update", func(t *testing.T) {
+		p := NewLRUPolicy[int, string]()
+		p.Insert(1)
+		p.Insert(2)
+		p.Insert(3)
+
+		want := 3
+		got := p.list.head.value
+		if want != got {
+			t.Errorf("wanted %d got %d", want, got)
+		}
+		p.Update(2)
+		want = 2
+		got = p.list.head.value
+		if want != got {
+			t.Errorf("wanted %d got %d", want, got)
+		}
+	})
+	t.Run("test evict failure", func(t *testing.T) {
+		c := NewCache[int, string](10)
+		p := c.policy
+		_, ok := p.Evict(c.entries)
+		if ok {
+			t.Errorf("wanted false got %v", ok)
+		}
+	})
+	t.Run("test evict success", func(t *testing.T) {
+		c := NewCache[int, string](10)
+		p := c.policy
+		p.Insert(5)
+		_, ok := p.Evict(c.entries)
+		if !ok {
+			t.Errorf("wanted true got %v", ok)
+		}
+	})
+}
+
+func TestLRUTimePolicy(t *testing.T) {
+	c := NewCache[int, string](10)
+	p := NewLRUTimePolicy[int, string]()
+	c.policy = p
+	t.Run("Test eviction failure", func(t *testing.T) {
+		_, ok := c.policy.Evict(c.entries)
+		if ok {
+			t.Errorf("wanted false got %v", ok)
+		}
+	})
+	t.Run("Test eviction success", func(t *testing.T) {
+		c.Put(1, "data 1")
+    c.Put(2, "data 2")
+    c.Put(3, "data 3")
+    c.Get(1)
+		v, ok := c.policy.Evict(c.entries)
+		if !ok {
+			t.Errorf("wanted false got %v", ok)
+		}
+    want := 2
+    if v != want {
+      t.Errorf("wanted %d got %d", want, v)
+    }
+	})
 }
 
 func BenchmarkLRUEviction(b *testing.B) {
-	cache := NewCache[int, string](5)
-	for range b.N {
-		for i := range 100 {
+	b.Run("Benchmark cache inserts", func(b *testing.B) {
+		cache := NewCache[int, string](100)
+		for range b.N {
+			for i := range 1000 {
+				val := fmt.Sprintf("data %d", i)
+				cache.Put(i, val)
+			}
+		}
+	})
+	b.Run("Benchmark cache retrievals", func(b *testing.B) {
+		cache := NewCache[int, string](100)
+		for i := range 1000 {
 			val := fmt.Sprintf("data %d", i)
 			cache.Put(i, val)
 		}
-	}
+		for range b.N {
+			for i := range 1000 {
+				cache.Get(i)
+			}
+		}
+	})
+}
+
+func BenchmarkLRUTimeEviction(b *testing.B) {
+	b.Run("Benchmark cache inserts", func(b *testing.B) {
+		cache := NewCache[int, string](100)
+		p := NewLRUTimePolicy[int, string]()
+		cache.policy = p
+		for range b.N {
+			for i := range 1000 {
+				val := fmt.Sprintf("data %d", i)
+				cache.Put(i, val)
+			}
+		}
+	})
+	b.Run("Benchmark cache retrievals", func(b *testing.B) {
+		cache := NewCache[int, string](99)
+		p := NewLRUTimePolicy[int, string]()
+		cache.policy = p
+		for i := range 1000 {
+			val := fmt.Sprintf("data %d", i)
+			cache.Put(i, val)
+		}
+		for range b.N {
+			for i := range 1000 {
+				cache.Get(i)
+			}
+		}
+	})
 }
