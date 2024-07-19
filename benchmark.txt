@@ -1,0 +1,7 @@
+goos: darwin
+goarch: arm64
+pkg: github.com/quamejnr/rache/rache
+BenchmarkLRUEviction/Benchmark_cache_inserts-10         	    5480	    216519 ns/op
+BenchmarkLRUEviction/Benchmark_cache_retrievals-10      	   36855	     34566 ns/op
+BenchmarkLRUTimeEviction/Benchmark_cache_inserts-10     	     772	   1553669 ns/op
+BenchmarkLRUTimeEviction/Benchmark_cache_retrievals-10  	   51465	     20259 ns/op
