@@ -254,7 +254,7 @@ func BenchmarkLRUTimeEviction(b *testing.B) {
 		}
 	})
 	b.Run("Benchmark cache retrievals", func(b *testing.B) {
-		cache := NewCache[int, string](99)
+		cache := NewCache[int, string](100)
 		p := NewLRUTimePolicy[int, string]()
 		cache.policy = p
 		for i := range 1000 {
