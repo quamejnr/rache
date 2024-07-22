@@ -30,7 +30,7 @@ type cache[T comparable, V any] struct {
 	successfulReads int
 	totalWrites     int
 	entries         map[T]*cacheEntry[V]
-	policy          Policy[T, V]
+	Policy          Policy[T, V]
 }
 
 func NewCache[T comparable, V any](entryLimit int) *cache[T, V] {
@@ -38,9 +38,11 @@ func NewCache[T comparable, V any](entryLimit int) *cache[T, V] {
 	return &cache[T, V]{
 		limit:   entryLimit,
 		entries: make(map[T]*cacheEntry[V], entryLimit),
-		policy:  LRU,
+		Policy:  LRU,
 	}
 }
+
+
 
 // Put entries in cache and returns true if entry already existed
 // If entry already present, replace entry.
@@ -57,16 +59,16 @@ func (c *cache[T, V]) Put(key T, val V) bool {
 	if !present {
 		// remove least recently used if entries is filled to the limit
 		if len(c.entries) == c.limit {
-			k, ok := c.policy.Evict(c.entries)
+			k, ok := c.Policy.Evict(c.entries)
 			if ok {
 				delete(c.entries, k)
 			}
 		}
 		e = &cacheEntry[V]{}
 		c.entries[key] = e
-		c.policy.Insert(key)
+		c.Policy.Insert(key)
 	} else {
-		c.policy.Update(key)
+		c.Policy.Update(key)
 	}
 	e.value = val
 	e.stats.lastAccessed = time.Now()
@@ -86,7 +88,7 @@ func (c *cache[T, V]) Get(key T) (V, bool) {
 	if !ok {
 		return zero, false
 	}
-	c.policy.Update(key)
+	c.Policy.Update(key)
 	c.successfulReads++
 	e.stats.reads++
 	e.stats.lastAccessed = time.Now()

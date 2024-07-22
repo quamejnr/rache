@@ -142,7 +142,7 @@ func TestLRUPolicy(t *testing.T) {
 
 	t.Run("test insert success", func(t *testing.T) {
 		c := NewCache[int, string](10)
-		p := c.policy
+		p := c.Policy
 		_, ok := p.Evict(c.entries)
 		if ok {
 			t.Errorf("wanted false got %v", ok)
@@ -174,7 +174,7 @@ func TestLRUPolicy(t *testing.T) {
 	})
 	t.Run("test evict failure", func(t *testing.T) {
 		c := NewCache[int, string](10)
-		p := c.policy
+		p := c.Policy
 		_, ok := p.Evict(c.entries)
 		if ok {
 			t.Errorf("wanted false got %v", ok)
@@ -182,7 +182,7 @@ func TestLRUPolicy(t *testing.T) {
 	})
 	t.Run("test evict success", func(t *testing.T) {
 		c := NewCache[int, string](10)
-		p := c.policy
+		p := c.Policy
 		p.Insert(5)
 		_, ok := p.Evict(c.entries)
 		if !ok {
@@ -194,9 +194,9 @@ func TestLRUPolicy(t *testing.T) {
 func TestLRUTimePolicy(t *testing.T) {
 	c := NewCache[int, string](10)
 	p := NewLRUTimePolicy[int, string]()
-	c.policy = p
+	c.Policy = p
 	t.Run("Test eviction failure", func(t *testing.T) {
-		_, ok := c.policy.Evict(c.entries)
+		_, ok := c.Policy.Evict(c.entries)
 		if ok {
 			t.Errorf("wanted false got %v", ok)
 		}
@@ -206,7 +206,7 @@ func TestLRUTimePolicy(t *testing.T) {
     c.Put(2, "data 2")
     c.Put(3, "data 3")
     c.Get(1)
-		v, ok := c.policy.Evict(c.entries)
+		v, ok := c.Policy.Evict(c.entries)
 		if !ok {
 			t.Errorf("wanted false got %v", ok)
 		}
@@ -245,7 +245,7 @@ func BenchmarkLRUTimeEviction(b *testing.B) {
 	b.Run("Benchmark cache inserts", func(b *testing.B) {
 		cache := NewCache[int, string](100)
 		p := NewLRUTimePolicy[int, string]()
-		cache.policy = p
+		cache.Policy = p
 		for range b.N {
 			for i := range 1000 {
 				val := fmt.Sprintf("data %d", i)
@@ -256,7 +256,7 @@ func BenchmarkLRUTimeEviction(b *testing.B) {
 	b.Run("Benchmark cache retrievals", func(b *testing.B) {
 		cache := NewCache[int, string](100)
 		p := NewLRUTimePolicy[int, string]()
-		cache.policy = p
+		cache.Policy = p
 		for i := range 1000 {
 			val := fmt.Sprintf("data %d", i)
 			cache.Put(i, val)
